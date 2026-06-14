@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api-jkanime/:path*",
+      "destination": "https://jkanime.net/:path*"
+    },
+    {
+      "source": "/((?!assets/|.*\\..*).*)$",
+      "destination": "/index.html"
+    }
+  ]
+}

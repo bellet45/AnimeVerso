@@ -1,0 +1,11 @@
+[[redirects]]
+  from = "/api-jkanime/*"
+  to = "https://jkanime.net/:splat"
+  status = 200
+  force = true
+  headers = { Origin = "https://jkanime.net", Referer = "https://jkanime.net/" }
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+
+  --color-neon-blue: #00f0ff;
+  --color-neon-purple: #bd00ff;
+  --color-deep-dark: #05050a;
+  --color-dark-card: #0d0d18;
+  
+  --animate-pulse-glow: pulse-glow 2s infinite alternate;
+  --animate-border-rotate: border-rotate 4s linear infinite;
+
+  @keyframes pulse-glow {
+    0% {
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1);
+    }
+    100% {
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.5), 0 0 35px rgba(0, 240, 255, 0.2);
+    }
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #05050a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1f1f38;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #00f0ff, #bd00ff);
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+  background: rgba(13, 13, 24, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-card {
+  background: rgba(20, 20, 35, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: rgba(20, 20, 35, 0.6);
+  border-color: rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+}
+
+/* Neon Text and Border Glows */
+.text-neon-glow-blue {
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.5), 0 0 15px rgba(0, 240, 255, 0.3);
+}
+
+.text-neon-glow-purple {
+  text-shadow: 0 0 8px rgba(189, 0, 255, 0.5), 0 0 15px rgba(189, 0, 255, 0.3);
+}
+
+.text-neon-glow-amber {
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.5), 0 0 15px rgba(251, 191, 36, 0.3);
+}
+
+.text-neon-glow-emerald {
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.5), 0 0 15px rgba(52, 211, 153, 0.3);
+}
+
+.neon-border-blue {
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+}
+
+.neon-border-purple {
+  box-shadow: 0 0 15px rgba(189, 0, 255, 0.2);
+  border: 1px solid rgba(189, 0, 255, 0.4);
+}
+
+/* Hide Player Controls in Cinema Mode */
+.cinema-mode {
+  position: relative;
+  z-index: 100;
+  box-shadow: 0 0 100px rgba(0, 0, 0, 0.95);
+}
+
+.cinema-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(2, 2, 4, 0.9);
+  z-index: 90;
+  pointer-events: all;
+  transition: opacity 0.5s ease-in-out;
+}
+
+/* Swiper custom overrides */
+.swiper-pagination-bullet {
+  background: rgba(255, 255, 255, 0.3) !important;
+  opacity: 1 !important;
+}
+
+.swiper-pagination-bullet-active {
+  background: #00f0ff !important;
+  width: 24px !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+}
+
+/* Mask for banner fade */
+.banner-mask {
+  mask-image: linear-gradient(to top, transparent, black 25%, black 85%, transparent);
+}
+
+.banner-mask-horizontal {
+  mask-image: linear-gradient(to right, black 50%, transparent);
+}
