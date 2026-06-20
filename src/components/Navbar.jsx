@@ -61,7 +61,7 @@ export default function Navbar() {
                 alt="AnimeVerso" 
                 className="w-9 h-9 rounded-full object-cover border border-white/10 shadow-md shadow-cyan-500/10 group-hover:scale-105 active:scale-95 transition-all" 
               />
-              <span className="font-display font-bold text-xl md:text-2xl tracking-tight bg-gradient-to-r from-white via-cyan-300 to-purple-400 bg-clip-text text-transparent group-hover:opacity-95 transition-opacity">
+              <span className="font-display font-bold text-xl md:text-2xl tracking-tight text-white group-hover:opacity-95 transition-opacity">
                 Anime<span className="text-cyan-400">Verso</span>
               </span>
             </Link>
