@@ -23,7 +23,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-sm leading-relaxed text-gray-500">
-              AnimeVerso es tu portal premium de streaming de anime para Latinoamérica. Disfruta de tus series y películas favoritas, catálogo avanzado de géneros y emisión en tiempo real, todo con calidad premium.
+              AnimeVerso para disfrutar de tus series y películas favoritas de anime en español.
             </p>
           </div>
 
@@ -73,7 +73,7 @@ export default function Footer() {
         {/* Bottom copyright */}
         <div className="border-t border-white/5 pt-8 text-center md:text-left">
           <p className="text-xs text-gray-600">
-            &copy; {currentYear} AnimeVerso. Todos los derechos reservados. Desarrollado con calidad premium.
+            &copy; {currentYear} AnimeVerso. Todos los derechos reservados.
           </p>
         </div>
       </div>
