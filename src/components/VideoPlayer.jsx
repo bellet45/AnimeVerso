@@ -22,7 +22,7 @@ export default function VideoPlayer({
 
   // Find if this episode has saved progress
   const savedProgress = cwList.find(
-    x => x && x.slug === slug && parseInt(x.episodeNumber, 10) === parseInt(episodeNumber, 10)
+    x => x && x.slug === slug && String(x.episodeNumber) === String(episodeNumber)
   );
 
   const [progressTime, setProgressTime] = useState(savedProgress?.progressTime || 300);
@@ -40,7 +40,7 @@ export default function VideoPlayer({
       slug,
       episodeNumber,
       animeTitle,
-      `Episodio ${episodeNumber}`,
+      String(episodeNumber).toLowerCase() === 'pelicula' ? 'Película' : `Episodio ${episodeNumber}`,
       coverImage,
       progressTime,
       duration
@@ -81,7 +81,7 @@ export default function VideoPlayer({
       slug,
       episodeNumber,
       animeTitle,
-      `Episodio ${episodeNumber}`,
+      String(episodeNumber).toLowerCase() === 'pelicula' ? 'Película' : `Episodio ${episodeNumber}`,
       coverImage,
       newProgress,
       duration
@@ -95,7 +95,7 @@ export default function VideoPlayer({
       slug,
       episodeNumber,
       animeTitle,
-      `Episodio ${episodeNumber}`,
+      String(episodeNumber).toLowerCase() === 'pelicula' ? 'Película' : `Episodio ${episodeNumber}`,
       coverImage,
       val,
       duration

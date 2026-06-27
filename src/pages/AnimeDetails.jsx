@@ -64,6 +64,7 @@ export default function AnimeDetails() {
   const isFavorite = favsList.some(x => x && x.slug === slug);
   const currentFavorite = favsList.find(x => x && x.slug === slug);
   const currentListType = currentFavorite ? (currentFavorite.listType || 'pendiente') : null;
+  const isMovie = anime?.type?.toLowerCase() === 'pelicula' || anime?.type?.toLowerCase() === 'película' || anime?.type?.toLowerCase() === 'movie';
 
   // Check if there is watch progress for this anime in Zustand store
   const cwList = Array.isArray(continueWatching) ? continueWatching : [];
@@ -131,19 +132,19 @@ export default function AnimeDetails() {
             <div className="flex flex-wrap gap-4 pt-2">
               {latestProgress ? (
                 <button
-                  onClick={() => navigate(`/anime/${slug}/${latestProgress.episodeNumber}`)}
+                  onClick={() => navigate(`/anime/${slug}/${isMovie ? 'pelicula' : latestProgress.episodeNumber}`)}
                   className="px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 text-black font-extrabold text-xs tracking-wider uppercase flex items-center gap-2 shadow-lg shadow-cyan-400/25 active:scale-95 transition-all cursor-pointer"
                 >
                   <Play fill="currentColor" className="w-4.5 h-4.5" />
-                  Continuar Ep {latestProgress.episodeNumber}
+                  {isMovie ? 'Continuar Película' : `Continuar Ep ${latestProgress.episodeNumber}`}
                 </button>
               ) : (
                 <button
-                  onClick={() => navigate(`/anime/${slug}/1`)}
+                  onClick={() => navigate(`/anime/${slug}/${isMovie ? 'pelicula' : '1'}`)}
                   className="px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 text-black font-extrabold text-xs tracking-wider uppercase flex items-center gap-2 shadow-lg shadow-cyan-400/25 active:scale-95 transition-all cursor-pointer"
                 >
                   <Play fill="currentColor" className="w-4.5 h-4.5" />
-                  Ver Primer Capítulo
+                  {isMovie ? 'Ver Película' : 'Ver Primer Capítulo'}
                 </button>
               )}
 
@@ -367,42 +368,74 @@ export default function AnimeDetails() {
                 <div key={i} className="h-10 bg-white/5 rounded-lg border border-white/5 animate-pulse" />
               ))}
             </div>
-          ) : episodesData?.data?.length > 0 ? (
+          ) : (episodesData?.data?.length > 0 || isMovie) ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-              {episodesData.data.map((ep) => {
-                // Check if this episode is completed/watched
-                const progress = cwList.find(
-                  x => x && x.slug === slug && parseInt(x.episodeNumber, 10) === parseInt(ep.number, 10)
-                );
-                const isEpWatched = progress && progress.percentage > 85;
+              {isMovie ? (
+                (() => {
+                  const progress = cwList.find(
+                    x => x && x.slug === slug && (String(x.episodeNumber) === 'pelicula' || String(x.episodeNumber) === '1')
+                  );
+                  const isEpWatched = progress && progress.percentage > 85;
+                  return (
+                    <button
+                      key="pelicula"
+                      onClick={() => navigate(`/anime/${slug}/pelicula`)}
+                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 font-semibold text-center transition-all cursor-pointer relative overflow-hidden group ${
+                        isEpWatched
+                          ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20'
+                          : 'bg-white/5 border-white/5 text-gray-300 hover:border-cyan-400/50 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      <span className="text-xs uppercase tracking-widest text-gray-500 font-bold group-hover:text-gray-400">
+                        Reproducir
+                      </span>
+                      <span className="text-base font-extrabold tracking-wide">
+                        Película
+                      </span>
+                      {progress && !isEpWatched && (
+                        <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_#00f0ff]" />
+                      )}
+                      {isEpWatched && (
+                        <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]" />
+                      )}
+                    </button>
+                  );
+                })()
+              ) : (
+                episodesData.data.map((ep) => {
+                  const progress = cwList.find(
+                    x => x && x.slug === slug && String(x.episodeNumber) === String(ep.number)
+                  );
+                  const isEpWatched = progress && progress.percentage > 85;
 
-                return (
-                  <button
-                    key={ep.number}
-                    onClick={() => navigate(`/anime/${slug}/${ep.number}`)}
-                    className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 font-semibold text-center transition-all cursor-pointer relative overflow-hidden group ${
-                      isEpWatched
-                        ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20'
-                        : 'bg-white/5 border-white/5 text-gray-300 hover:border-cyan-400/50 hover:bg-white/10 hover:text-white'
-                    }`}
-                  >
-                    <span className="text-xs uppercase tracking-widest text-gray-500 font-bold group-hover:text-gray-400">
-                      Capítulo
-                    </span>
-                    <span className="text-base font-extrabold tracking-wide">
-                      {ep.number}
-                    </span>
-                    
-                    {/* Tiny neon dot showing watch progress */}
-                    {progress && !isEpWatched && (
-                      <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_#00f0ff]" />
-                    )}
-                    {isEpWatched && (
-                      <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]" />
-                    )}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={ep.number}
+                      onClick={() => navigate(`/anime/${slug}/${ep.number}`)}
+                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 font-semibold text-center transition-all cursor-pointer relative overflow-hidden group ${
+                        isEpWatched
+                          ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20'
+                          : 'bg-white/5 border-white/5 text-gray-300 hover:border-cyan-400/50 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      <span className="text-xs uppercase tracking-widest text-gray-500 font-bold group-hover:text-gray-400">
+                        Capítulo
+                      </span>
+                      <span className="text-base font-extrabold tracking-wide">
+                        {ep.number}
+                      </span>
+                      
+                      {/* Tiny neon dot showing watch progress */}
+                      {progress && !isEpWatched && (
+                        <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_#00f0ff]" />
+                      )}
+                      {isEpWatched && (
+                        <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]" />
+                      )}
+                    </button>
+                  );
+                })
+              )}
             </div>
           ) : (
             <div className="aspect-[4/1] w-full rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center p-8 text-center">

@@ -16,11 +16,14 @@ export default function EpisodePlayer() {
     queryFn: () => getAnimeDetails(slug)
   });
 
+  const isMovie = anime?.type?.toLowerCase() === 'pelicula' || anime?.type?.toLowerCase() === 'película' || anime?.type?.toLowerCase() === 'movie';
+  const epToFetch = isMovie ? 'pelicula' : episodeNumber;
+
   // 2. Fetch Play Servers dynamically (e.g. Mega, Streamwish, VOE)
   const { data: servers = [], isLoading: isServersLoading, error } = useQuery({
-    queryKey: ['episodeServers', slug, epNum],
-    queryFn: () => getEpisodeServers(slug, epNum),
-    // Re-fetch if slug or episode changes
+    queryKey: ['episodeServers', slug, epToFetch],
+    queryFn: () => getEpisodeServers(slug, epToFetch),
+    enabled: !!anime,
   });
 
   // Scroll to top on mount / change
@@ -44,7 +47,7 @@ export default function EpisodePlayer() {
         <Info className="w-12 h-12 text-red-500 mb-3 animate-pulse" />
         <h3 className="font-display font-semibold text-gray-200 text-lg">Error al cargar el reproductor</h3>
         <p className="text-sm text-gray-500 max-w-sm mt-1">
-          No se pudieron obtener los servidores de reproducción para el capítulo {episodeNumber} de "{anime?.title || slug}".
+          No se pudieron obtener los servidores de reproducción para {isMovie ? 'la película' : `el capítulo ${episodeNumber}`} de "{anime?.title || slug}".
         </p>
         <div className="flex gap-4 mt-6">
           <button
@@ -62,19 +65,21 @@ export default function EpisodePlayer() {
   }
 
   // Calculate hasNext/hasPrev
-  const hasPrev = epNum > 1;
+  const hasPrev = !isMovie && epNum > 1;
   
   // A next episode is available if we have total episodes metadata AND current ep is less than total,
   // OR since scraping might return 0 for ongoing (like One Piece), we can assume ongoing series
   // have a next episode if it was aired (JkAnime recent list is a good indicator, or we can allow next click)
   const isOngoing = anime?.status?.toLowerCase().includes('emision') || anime?.status?.toLowerCase() === 'ongoing';
-  const hasNext = (anime?.episodesCount > 0 && epNum < anime.episodesCount) || isOngoing;
+  const hasNext = !isMovie && (((anime?.episodesCount > 0 && epNum < anime.episodesCount) || isOngoing));
 
   const handleNext = () => {
+    if (isMovie) return;
     navigate(`/anime/${slug}/${epNum + 1}`);
   };
 
   const handlePrev = () => {
+    if (isMovie) return;
     navigate(`/anime/${slug}/${epNum - 1}`);
   };
 
@@ -94,7 +99,9 @@ export default function EpisodePlayer() {
               {anime?.title || slug}
             </Link>
             <span>/</span>
-            <span className="text-cyan-400">Capítulo {episodeNumber}</span>
+            <span className="text-cyan-400">
+              {isMovie ? 'Película' : `Capítulo ${episodeNumber}`}
+            </span>
           </div>
 
           {/* Previous / Next buttons */}
@@ -122,7 +129,7 @@ export default function EpisodePlayer() {
         <VideoPlayer
           servers={servers}
           animeTitle={anime?.title || slug}
-          episodeNumber={epNum}
+          episodeNumber={epToFetch}
           slug={slug}
           coverImage={anime?.coverImage || ''}
           hasNext={hasNext}
@@ -139,7 +146,7 @@ export default function EpisodePlayer() {
                 Estás viendo
               </span>
               <h2 className="font-display font-extrabold text-xl md:text-2xl text-white mt-0.5">
-                {anime?.title} — Capítulo {episodeNumber}
+                {anime?.title} {isMovie ? '— Película' : `— Capítulo ${episodeNumber}`}
               </h2>
             </div>
             
