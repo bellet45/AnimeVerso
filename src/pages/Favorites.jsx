@@ -6,7 +6,13 @@ import AnimeCard from '../components/AnimeCard';
 
 export default function Favorites() {
   const [activeTab, setActiveTab] = useState('watching'); // 'watching', 'pending', 'completed', 'history'
-  const { favorites, history, clearHistory } = useStore();
+  const { favorites, history, clearHistory, removeFromHistory } = useStore();
+
+  const handleRemoveFromHistory = (slug, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    removeFromHistory(slug);
+  };
 
   const favsList = Array.isArray(favorites) ? favorites : [];
   const histList = Array.isArray(history) ? history : [];
@@ -179,8 +185,18 @@ export default function Favorites() {
             {histList.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6 animate-fadeIn">
                 {histList.map((anime) => (
-                  <div key={anime.slug} className="aspect-[3/4.8] relative">
+                  <div key={anime.slug} className="aspect-[3/4.8] relative group/hist">
                     <AnimeCard anime={anime} />
+                    
+                    {/* Delete single item from history */}
+                    <button
+                      onClick={(e) => handleRemoveFromHistory(anime.slug, e)}
+                      className="absolute top-2 right-11 p-1.5 rounded-lg border border-red-500/30 bg-black/60 hover:bg-red-500/20 text-red-400 backdrop-blur-md z-20 transition-all cursor-pointer shadow-md shadow-black/30 opacity-75 md:opacity-0 md:group-hover/hist:opacity-100"
+                      title="Eliminar del historial"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+
                     {anime.watchedAt && (
                       <div className="absolute -bottom-3 left-2 right-2 bg-black/80 backdrop-blur-md rounded border border-white/5 px-2 py-0.5 text-[9px] text-gray-500 text-center truncate pointer-events-none z-10">
                         Visto: {new Date(anime.watchedAt).toLocaleDateString()}

@@ -168,6 +168,21 @@ export const useStore = create((set, get) => ({
     }
   },
 
+  removeFromHistory: async (slug) => {
+    const history = Array.isArray(get().history) ? get().history : [];
+    const newHistory = history.filter(x => x && x.slug !== slug);
+    set({ history: newHistory });
+    saveLocalState('history', newHistory);
+    const { user } = get();
+    if (user) {
+      await saveUserData(user.uid, {
+        favorites: Array.isArray(get().favorites) ? get().favorites : [],
+        history: newHistory,
+        continueWatching: Array.isArray(get().continueWatching) ? get().continueWatching : []
+      });
+    }
+  },
+
   // Continue Watching Actions
   updateProgress: async (slug, episodeNumber, animeTitle, episodeTitle, image, progressTime, duration) => {
     const cw = Array.isArray(get().continueWatching) ? get().continueWatching : [];
