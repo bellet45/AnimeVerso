@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Play, Star, Sparkles, FolderOpen, Calendar, Film, Bookmark, Info, Tv, Eye, CheckCircle, Trash2 } from 'lucide-react';
+import { Play, Star, Sparkles, FolderOpen, Calendar, Film, Bookmark, Info, Tv, Eye, CheckCircle, Trash2, Share2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getAnimeDetails, getAnimeEpisodes } from '../services/api';
 import { useStore } from '../store/useStore';
 import SkeletonLoader from '../components/SkeletonLoader';
@@ -14,6 +15,33 @@ export default function AnimeDetails() {
   // Local pagination state for episodes
   const [episodePage, setEpisodePage] = useState(1);
   const [showFavDropdown, setShowFavDropdown] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+
+  const handleShare = async () => {
+    const shareData = {
+      title: anime?.title || 'Anime',
+      text: `¡Mira ${anime?.title || 'este anime'} en AnimeVerso!`,
+      url: window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Error al compartir:', error);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      } catch (err) {
+        console.error('No se pudo copiar el enlace:', err);
+      }
+    }
+  };
 
   // 1. Fetch Anime Scraped Details (cover, title, synopsis, specs, related, animeId, csrfToken)
   const { data: anime, isLoading: isDetailsLoading, error } = useQuery({
@@ -254,6 +282,14 @@ export default function AnimeDetails() {
                   </>
                 )}
               </div>
+
+              <button
+                onClick={handleShare}
+                className="px-6 py-3 rounded-full text-xs font-bold tracking-wider uppercase border border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-cyan-400/30 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+              >
+                <Share2 className="w-4 h-4 text-cyan-400" />
+                Compartir
+              </button>
             </div>
 
             {/* Synopsis Panel */}
@@ -447,6 +483,26 @@ export default function AnimeDetails() {
         </section>
 
       </div>
+
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-xl bg-black/90 border border-cyan-500/30 text-white shadow-[0_0_20px_rgba(6,182,212,0.15)] backdrop-blur-md"
+          >
+            <div className="w-8 h-8 rounded-full bg-cyan-500/10 flex items-center justify-center border border-cyan-500/30">
+              <Share2 className="w-4 h-4 text-cyan-400" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white">¡Enlace copiado!</p>
+              <p className="text-[10px] text-gray-400">El link del anime ya está en tu portapapeles</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
