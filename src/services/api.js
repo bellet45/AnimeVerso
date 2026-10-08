@@ -178,6 +178,39 @@ export async function getAnimeDetails(slug) {
       });
     }
 
+    // Check #uep (last episode link for ongoing anime)
+    const uepHref = $("#uep").attr("href") || "";
+    const uepText = $("#uep").text().trim();
+    const uepMatch = uepHref.match(/\/(\d+)\/?$/) || uepText.match(/(\d+)/);
+    const latestFromUep = uepMatch ? parseInt(uepMatch[1], 10) : 0;
+
+    // Check links pointing to episodes of this anime
+    let maxFromLinks = 0;
+    $(`a[href*="/${slug}/"]`).each((_, a) => {
+      const href = $(a).attr('href') || '';
+      const m = href.match(new RegExp(`/${slug}/(\\d+)/?$`));
+      if (m) {
+        const num = parseInt(m[1], 10);
+        if (num > maxFromLinks) maxFromLinks = num;
+      }
+    });
+
+    const isMovie = type.toLowerCase().includes('pelicula') || type.toLowerCase().includes('película') || type.toLowerCase().includes('movie');
+    const isAiring = status.toLowerCase().includes('emision') || status.toLowerCase().includes('ongoing');
+
+    let totalEpisodes = 0;
+    if (isMovie) {
+      totalEpisodes = 1;
+    } else if (isAiring) {
+      totalEpisodes = latestFromUep > 0 ? latestFromUep : (maxFromLinks > 0 ? maxFromLinks : episodesCount);
+    } else {
+      totalEpisodes = Math.max(episodesCount, latestFromUep, maxFromLinks);
+    }
+
+    if (!isMovie && totalEpisodes <= 0) {
+      totalEpisodes = 1;
+    }
+
     // Related Animes
     const related = [];
     $(".ancrel, .relaciones ul li").each((_, el) => {
@@ -207,7 +240,9 @@ export async function getAnimeDetails(slug) {
       studios: [...new Set(studios)],
       status,
       season,
-      episodesCount,
+      episodesCount: totalEpisodes,
+      totalEpisodes,
+      latestEpisode: latestFromUep || totalEpisodes,
       animeId,
       csrfToken,
       related
@@ -219,29 +254,68 @@ export async function getAnimeDetails(slug) {
 }
 
 /**
- * 3. Fetch Episode List (via Laravel CSRF AJAX Endpoint)
+ * 3. Fetch / Generate Episode List
+ * Generates the paginated list of episodes based on total available episodes.
  */
-export async function getAnimeEpisodes(animeId, page, csrfToken) {
-  if (!animeId || !csrfToken) return { total: 0, data: [] };
-  try {
-    const searchParams = new URLSearchParams();
-    searchParams.append('_token', csrfToken);
+export async function getAnimeEpisodes(animeOrId, page = 1, options = {}) {
+  let total = 0;
+  let itemsPerPage = 16;
+  let isMovie = false;
 
-    const res = await fetch(`${PROXY_BASE}/ajax/episodes/${animeId}/${page}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      body: searchParams
-    });
-
-    if (!res.ok) throw new Error('AJAX request failed');
-    return await res.json(); // returns { total, current_page, data: [...] }
-  } catch (error) {
-    console.error("Error fetching episodes:", error);
-    return { total: 0, data: [] };
+  if (typeof animeOrId === 'object' && animeOrId !== null) {
+    total = animeOrId.totalEpisodes || animeOrId.episodesCount || 0;
+    isMovie = animeOrId.type?.toLowerCase().includes('pelicula') || 
+              animeOrId.type?.toLowerCase().includes('película') || 
+              animeOrId.type?.toLowerCase().includes('movie');
+    if (typeof options === 'number') itemsPerPage = options;
+    else if (options?.itemsPerPage) itemsPerPage = options.itemsPerPage;
+  } else if (typeof animeOrId === 'number') {
+    total = animeOrId;
+    if (typeof options === 'number') itemsPerPage = options;
+    else if (options?.itemsPerPage) itemsPerPage = options.itemsPerPage;
+  } else if (typeof options === 'number') {
+    total = options;
+  } else if (typeof options === 'object' && options !== null) {
+    if (options.total) total = options.total;
+    if (options.itemsPerPage) itemsPerPage = options.itemsPerPage;
   }
+
+  if (isMovie) {
+    return {
+      total: 1,
+      current_page: 1,
+      last_page: 1,
+      data: [{ number: 'pelicula', title: 'Película' }]
+    };
+  }
+
+  // If total is known, generate paginated episodes list directly
+  if (total > 0) {
+    const start = (page - 1) * itemsPerPage + 1;
+    const end = Math.min(page * itemsPerPage, total);
+    const data = [];
+
+    for (let num = start; num <= end; num++) {
+      data.push({
+        number: num,
+        title: `Capítulo ${num}`
+      });
+    }
+
+    return {
+      total,
+      current_page: page,
+      last_page: Math.ceil(total / itemsPerPage),
+      data
+    };
+  }
+
+  return {
+    total: 0,
+    current_page: page,
+    last_page: 1,
+    data: []
+  };
 }
 
 /**
@@ -249,7 +323,14 @@ export async function getAnimeEpisodes(animeId, page, csrfToken) {
  */
 export async function getEpisodeServers(slug, episodeNumber) {
   try {
-    const res = await fetch(`${PROXY_BASE}/${slug}/${episodeNumber}/`);
+    let res = await fetch(`${PROXY_BASE}/${slug}/${episodeNumber}/`);
+    if (!res.ok && episodeNumber === 'pelicula') {
+      const fallbackRes = await fetch(`${PROXY_BASE}/${slug}/1/`);
+      if (fallbackRes.ok) res = fallbackRes;
+    } else if (!res.ok && String(episodeNumber) === '1') {
+      const fallbackRes = await fetch(`${PROXY_BASE}/${slug}/pelicula/`);
+      if (fallbackRes.ok) res = fallbackRes;
+    }
     if (!res.ok) throw new Error(`Failed to fetch episode servers: ${slug}/${episodeNumber}`);
     const html = await res.text();
     const $ = load(html);

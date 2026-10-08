@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Play, Star, Sparkles, FolderOpen, Calendar, Film, Bookmark, Info, Tv, Eye, CheckCircle, Trash2, Share2 } from 'lucide-react';
+import { Play, Star, Sparkles, FolderOpen, Calendar, Film, Bookmark, Info, Tv, Eye, CheckCircle, Trash2, Share2, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getAnimeDetails, getAnimeEpisodes } from '../services/api';
 import { useStore } from '../store/useStore';
@@ -12,8 +12,10 @@ export default function AnimeDetails() {
   const navigate = useNavigate();
   const { favorites, addFavorite, removeFavorite, continueWatching, addToHistory } = useStore();
   
-  // Local pagination state for episodes
+  // Local pagination & filter state for episodes
   const [episodePage, setEpisodePage] = useState(1);
+  const [searchEp, setSearchEp] = useState('');
+  const [isReversed, setIsReversed] = useState(false);
   const [showFavDropdown, setShowFavDropdown] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
@@ -43,22 +45,28 @@ export default function AnimeDetails() {
     }
   };
 
-  // 1. Fetch Anime Scraped Details (cover, title, synopsis, specs, related, animeId, csrfToken)
+  // 1. Fetch Anime Scraped Details (cover, title, synopsis, specs, related, totalEpisodes)
   const { data: anime, isLoading: isDetailsLoading, error } = useQuery({
     queryKey: ['animeDetails', slug],
     queryFn: () => getAnimeDetails(slug),
   });
 
-  // 2. Fetch Episodes list dynamically using Anime ID and CSRF Token
+  const isMovie = anime?.type?.toLowerCase() === 'pelicula' || anime?.type?.toLowerCase() === 'película' || anime?.type?.toLowerCase() === 'movie';
+  const itemsPerPage = 16;
+  const totalEpisodes = isMovie ? 1 : (anime?.totalEpisodes || anime?.episodesCount || 0);
+  const totalPages = Math.max(1, Math.ceil(totalEpisodes / itemsPerPage));
+
+  // 2. Fetch Episodes list dynamically
   const { data: episodesData, isLoading: isEpisodesLoading } = useQuery({
-    queryKey: ['animeEpisodes', anime?.animeId, episodePage],
-    queryFn: () => getAnimeEpisodes(anime.animeId, episodePage, anime.csrfToken),
-    enabled: !!anime?.animeId && !!anime?.csrfToken, // Wait until ID and CSRF are ready
+    queryKey: ['animeEpisodes', slug, totalEpisodes, episodePage],
+    queryFn: () => getAnimeEpisodes(anime, episodePage, itemsPerPage),
+    enabled: !!anime,
   });
 
-  // Reset episode page when slug changes
+  // Reset episode page & search when slug changes
   useEffect(() => {
     setEpisodePage(1);
+    setSearchEp('');
     
     // Add to watch history when visiting details page
     if (anime) {
@@ -87,12 +95,10 @@ export default function AnimeDetails() {
     );
   }
 
-
   const favsList = Array.isArray(favorites) ? favorites : [];
   const isFavorite = favsList.some(x => x && x.slug === slug);
   const currentFavorite = favsList.find(x => x && x.slug === slug);
   const currentListType = currentFavorite ? (currentFavorite.listType || 'pendiente') : null;
-  const isMovie = anime?.type?.toLowerCase() === 'pelicula' || anime?.type?.toLowerCase() === 'película' || anime?.type?.toLowerCase() === 'movie';
 
   // Check if there is watch progress for this anime in Zustand store
   const cwList = Array.isArray(continueWatching) ? continueWatching : [];
@@ -101,11 +107,6 @@ export default function AnimeDetails() {
   const latestProgress = activeCwList.length > 0
     ? activeCwList.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0]
     : null;
-
-  // Calculate episode page buttons
-  const itemsPerPage = 16;
-  const totalEpisodes = episodesData?.total || anime.episodesCount || 0;
-  const totalPages = Math.ceil(totalEpisodes / itemsPerPage);
 
   const handlePageChange = (page) => {
     setEpisodePage(page);
@@ -366,36 +367,131 @@ export default function AnimeDetails() {
         {/* 3. Episodes Section */}
         <section className="space-y-6 pt-6 border-t border-white/5">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h3 className="font-display font-extrabold text-xl md:text-2xl text-white tracking-wide uppercase flex items-center gap-2">
-              <Tv className="w-5 h-5 text-cyan-400" />
-              Episodios Disponibles
-            </h3>
+            <div className="flex items-center gap-3">
+              <h3 className="font-display font-extrabold text-xl md:text-2xl text-white tracking-wide uppercase flex items-center gap-2">
+                <Tv className="w-5 h-5 text-cyan-400" />
+                Episodios Disponibles
+              </h3>
+              {totalEpisodes > 0 && !isMovie && (
+                <span className="text-xs font-bold text-gray-400 bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
+                  {totalEpisodes} {totalEpisodes === 1 ? 'capítulo' : 'capítulos'}
+                </span>
+              )}
+            </div>
             
-            {/* Pagination Tabs */}
-            {totalPages > 1 && (
-              <div className="flex flex-wrap gap-1.5">
-                {Array.from({ length: totalPages }).map((_, i) => {
-                  const pageNum = i + 1;
-                  const startRange = i * itemsPerPage + 1;
-                  const endRange = Math.min((i + 1) * itemsPerPage, totalEpisodes);
-                  
-                  return (
+            {/* Controls: Search + Order Toggle */}
+            {!isMovie && totalEpisodes > 0 && (
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* Search input */}
+                <div className="relative flex items-center">
+                  <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 pointer-events-none" />
+                  <input
+                    type="number"
+                    min="1"
+                    max={totalEpisodes}
+                    value={searchEp}
+                    onChange={(e) => setSearchEp(e.target.value)}
+                    placeholder="Buscar capítulo..."
+                    className="pl-8 pr-7 py-1.5 bg-white/5 border border-white/10 focus:border-cyan-400 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none w-36 sm:w-44 transition-all"
+                  />
+                  {searchEp && (
                     <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        episodePage === pageNum
-                          ? 'bg-cyan-400 text-black font-extrabold shadow-md shadow-cyan-400/25'
-                          : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
-                      }`}
+                      onClick={() => setSearchEp('')}
+                      className="absolute right-2 text-gray-400 hover:text-white text-xs cursor-pointer"
+                      title="Limpiar búsqueda"
                     >
-                      {startRange}-{endRange}
+                      ✕
                     </button>
-                  );
-                })}
+                  )}
+                </div>
+
+                {/* Invert order button */}
+                <button
+                  onClick={() => setIsReversed(!isReversed)}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    isReversed
+                      ? 'bg-cyan-400/10 border-cyan-400/40 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.15)]'
+                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:text-white'
+                  }`}
+                  title="Invertir orden de episodios"
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{isReversed ? 'Recientes primero' : 'Normal (1 - ...)'}</span>
+                </button>
               </div>
             )}
           </div>
+
+          {/* Pagination Controls (when not searching and totalPages > 1) */}
+          {!isMovie && !searchEp.trim() && totalPages > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/5">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePageChange(Math.max(1, episodePage - 1))}
+                  disabled={episodePage === 1}
+                  className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+                  title="Página anterior"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-xs text-gray-400 font-semibold px-1">
+                  Página <span className="text-white font-bold">{episodePage}</span> de <span className="text-white font-bold">{totalPages}</span>
+                </span>
+                <button
+                  onClick={() => handlePageChange(Math.min(totalPages, episodePage + 1))}
+                  disabled={episodePage === totalPages}
+                  className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+                  title="Página siguiente"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* If <= 8 pages: render all buttons. If > 8 pages: render select dropdown */}
+              {totalPages <= 8 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {Array.from({ length: totalPages }).map((_, i) => {
+                    const pageNum = i + 1;
+                    const startRange = i * itemsPerPage + 1;
+                    const endRange = Math.min((i + 1) * itemsPerPage, totalEpisodes);
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                          episodePage === pageNum
+                            ? 'bg-cyan-400 text-black font-extrabold shadow-md shadow-cyan-400/25'
+                            : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        {startRange}-{endRange}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 font-medium hidden sm:inline">Rango:</span>
+                  <select
+                    value={episodePage}
+                    onChange={(e) => handlePageChange(Number(e.target.value))}
+                    className="bg-[#0e0f1a] border border-white/15 text-white rounded-lg px-2.5 py-1 text-xs font-semibold focus:outline-none focus:border-cyan-400 cursor-pointer"
+                  >
+                    {Array.from({ length: totalPages }).map((_, i) => {
+                      const pageNum = i + 1;
+                      const startRange = i * itemsPerPage + 1;
+                      const endRange = Math.min((i + 1) * itemsPerPage, totalEpisodes);
+                      return (
+                        <option key={pageNum} value={pageNum} className="bg-[#0e0f1a] text-white">
+                          Episodios {startRange} - {endRange}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Episode Grid Loader */}
           {isEpisodesLoading ? (
@@ -404,15 +500,33 @@ export default function AnimeDetails() {
                 <div key={i} className="h-10 bg-white/5 rounded-lg border border-white/5 animate-pulse" />
               ))}
             </div>
-          ) : (episodesData?.data?.length > 0 || isMovie) ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-              {isMovie ? (
-                (() => {
-                  const progress = cwList.find(
-                    x => x && x.slug === slug && (String(x.episodeNumber) === 'pelicula' || String(x.episodeNumber) === '1')
-                  );
-                  const isEpWatched = progress && progress.percentage > 85;
-                  return (
+          ) : (
+            (() => {
+              const searchedNumber = searchEp.trim() ? parseInt(searchEp.trim(), 10) : null;
+              const isSearching = !isNaN(searchedNumber) && searchedNumber !== null;
+
+              let currentEpisodes = [];
+              if (isSearching) {
+                if (searchedNumber >= 1 && searchedNumber <= totalEpisodes) {
+                  currentEpisodes = [{ number: searchedNumber, title: `Capítulo ${searchedNumber}` }];
+                } else {
+                  currentEpisodes = [];
+                }
+              } else {
+                currentEpisodes = episodesData?.data || [];
+                if (isReversed) {
+                  currentEpisodes = [...currentEpisodes].reverse();
+                }
+              }
+
+              if (isMovie) {
+                const progress = cwList.find(
+                  x => x && x.slug === slug && (String(x.episodeNumber) === 'pelicula' || String(x.episodeNumber) === '1')
+                );
+                const isEpWatched = progress && progress.percentage > 85;
+
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
                     <button
                       key="pelicula"
                       onClick={() => navigate(`/anime/${slug}/pelicula`)}
@@ -435,50 +549,92 @@ export default function AnimeDetails() {
                         <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]" />
                       )}
                     </button>
-                  );
-                })()
-              ) : (
-                episodesData.data.map((ep) => {
-                  const progress = cwList.find(
-                    x => x && x.slug === slug && String(x.episodeNumber) === String(ep.number)
-                  );
-                  const isEpWatched = progress && progress.percentage > 85;
+                  </div>
+                );
+              }
 
-                  return (
+              if (isSearching && currentEpisodes.length === 0) {
+                return (
+                  <div className="aspect-[4/1] w-full rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center p-8 text-center">
+                    <Search className="w-8 h-8 text-gray-500 mb-2" />
+                    <h4 className="font-display font-semibold text-gray-300">Capítulo no encontrado</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      El número {searchedNumber} está fuera del rango disponible (1 a {totalEpisodes}).
+                    </p>
                     <button
-                      key={ep.number}
-                      onClick={() => navigate(`/anime/${slug}/${ep.number}`)}
-                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 font-semibold text-center transition-all cursor-pointer relative overflow-hidden group ${
-                        isEpWatched
-                          ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20'
-                          : 'bg-white/5 border-white/5 text-gray-300 hover:border-cyan-400/50 hover:bg-white/10 hover:text-white'
-                      }`}
+                      onClick={() => setSearchEp('')}
+                      className="mt-3 px-4 py-1.5 bg-white/5 hover:bg-white/10 text-cyan-400 text-xs font-semibold rounded-lg border border-cyan-400/20 cursor-pointer"
                     >
-                      <span className="text-xs uppercase tracking-widest text-gray-500 font-bold group-hover:text-gray-400">
-                        Capítulo
-                      </span>
-                      <span className="text-base font-extrabold tracking-wide">
-                        {ep.number}
-                      </span>
-                      
-                      {/* Tiny neon dot showing watch progress */}
-                      {progress && !isEpWatched && (
-                        <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_#00f0ff]" />
-                      )}
-                      {isEpWatched && (
-                        <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]" />
-                      )}
+                      Ver lista completa
                     </button>
-                  );
-                })
-              )}
-            </div>
-          ) : (
-            <div className="aspect-[4/1] w-full rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center p-8 text-center">
-              <Tv className="w-8 h-8 text-gray-500 mb-2" />
-              <h4 className="font-display font-semibold text-gray-300">Episodios no encontrados</h4>
-              <p className="text-xs text-gray-500 mt-0.5">El scraper falló al realizar la paginación de los capítulos o el servidor no respondió.</p>
-            </div>
+                  </div>
+                );
+              }
+
+              if (currentEpisodes.length > 0) {
+                return (
+                  <div className="space-y-4">
+                    {isSearching && (
+                      <div className="flex items-center justify-between text-xs text-gray-400 px-1">
+                        <span>Mostrando resultado para el capítulo <strong>{searchedNumber}</strong></span>
+                        <button
+                          onClick={() => {
+                            setEpisodePage(Math.ceil(searchedNumber / itemsPerPage));
+                            setSearchEp('');
+                          }}
+                          className="text-cyan-400 hover:underline cursor-pointer"
+                        >
+                          Ir a la página que contiene este capítulo →
+                        </button>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                      {currentEpisodes.map((ep) => {
+                        const progress = cwList.find(
+                          x => x && x.slug === slug && String(x.episodeNumber) === String(ep.number)
+                        );
+                        const isEpWatched = progress && progress.percentage > 85;
+
+                        return (
+                          <button
+                            key={ep.number}
+                            onClick={() => navigate(`/anime/${slug}/${ep.number}`)}
+                            className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 font-semibold text-center transition-all cursor-pointer relative overflow-hidden group ${
+                              isEpWatched
+                                ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20'
+                                : 'bg-white/5 border-white/5 text-gray-300 hover:border-cyan-400/50 hover:bg-white/10 hover:text-white'
+                            }`}
+                          >
+                            <span className="text-xs uppercase tracking-widest text-gray-500 font-bold group-hover:text-gray-400">
+                              Capítulo
+                            </span>
+                            <span className="text-base font-extrabold tracking-wide">
+                              {ep.number}
+                            </span>
+                            
+                            {/* Tiny neon dot showing watch progress */}
+                            {progress && !isEpWatched && (
+                              <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_#00f0ff]" />
+                            )}
+                            {isEpWatched && (
+                              <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="aspect-[4/1] w-full rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center p-8 text-center">
+                  <Tv className="w-8 h-8 text-gray-500 mb-2" />
+                  <h4 className="font-display font-semibold text-gray-300">Episodios no disponibles</h4>
+                  <p className="text-xs text-gray-500 mt-0.5">No se encontraron capítulos disponibles para este anime por el momento.</p>
+                </div>
+              );
+            })()
           )}
         </section>
 
