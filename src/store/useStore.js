@@ -33,6 +33,11 @@ export const useStore = create((set, get) => ({
   favorites: loadLocalState('favorites', []),
   history: loadLocalState('history', []),
   continueWatching: loadLocalState('continueWatching', []),
+  isRandomModalOpen: false,
+
+  // Random Anime Modal Actions
+  openRandomModal: () => set({ isRandomModalOpen: true }),
+  closeRandomModal: () => set({ isRandomModalOpen: false }),
 
   // User Authentication Actions
   setUser: async (user) => {

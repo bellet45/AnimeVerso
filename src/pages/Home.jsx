@@ -2,9 +2,10 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
-import { Tv, Sparkles, TrendingUp, Flame, CalendarClock, Compass } from 'lucide-react';
+import { Tv, Sparkles, TrendingUp, Flame, CalendarClock, Compass, Dices } from 'lucide-react';
 
 import { getHomeData, getFilteredCatalog } from '../services/api';
+import { useStore } from '../store/useStore';
 import HeroBanner from '../components/HeroBanner';
 import AnimeCard from '../components/AnimeCard';
 import EpisodeCard from '../components/EpisodeCard';
@@ -15,6 +16,8 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 
 export default function Home() {
+  const { openRandomModal } = useStore();
+
   // 1. Fetch Homepage Scraped Data (Hero slider, Top popular, Recent episodes)
   const { data: home, isLoading: isHomeLoading } = useQuery({
     queryKey: ['homeData'],
@@ -70,6 +73,30 @@ export default function Home() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 space-y-16">
+        
+        {/* Discovery Banner: Anime Aleatorio */}
+        <div className="relative overflow-hidden rounded-2xl glass-panel border border-cyan-500/20 p-5 sm:p-6 bg-gradient-to-r from-purple-950/20 via-[#0b0b14] to-cyan-950/20 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4 text-center sm:text-left">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-purple-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-400 flex-shrink-0 shadow-lg shadow-cyan-400/10">
+              <Dices className="w-6 h-6 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="font-display font-extrabold text-base sm:text-lg text-white">
+                ¿No sabes qué ver hoy?
+              </h4>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Deja que la suerte elija tu próxima serie con nuestra ruleta de anime aleatorio.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={openRandomModal}
+            className="w-full sm:w-auto px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 text-black font-extrabold text-xs tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg shadow-cyan-400/25 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+          >
+            <Dices className="w-4 h-4" />
+            <span>Tirar Ruleta</span>
+          </button>
+        </div>
 
         {/* 2. Section: Recién Actualizados (Episodes list) */}
         <section className="space-y-4">

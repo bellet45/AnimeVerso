@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { Filter, RotateCcw, Play, Compass, ChevronDown, Check } from 'lucide-react';
+import { Filter, RotateCcw, Play, Compass, ChevronDown, Check, Dices } from 'lucide-react';
 import { getFilteredCatalog, searchAnime } from '../services/api';
+import { useStore } from '../store/useStore';
 import AnimeCard from '../components/AnimeCard';
 import SkeletonLoader from '../components/SkeletonLoader';
 
@@ -54,6 +55,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function Catalog() {
+  const { openRandomModal } = useStore();
   const [searchParams, setSearchParams] = useSearchParams();
   
   // 1. Read filters from URL parameters
@@ -217,6 +219,16 @@ export default function Catalog() {
             >
               <Filter className="w-4 h-4 text-cyan-400" />
               Filtros Avanzados
+            </button>
+
+            {/* Random Anime Button */}
+            <button
+              onClick={openRandomModal}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500/15 to-cyan-500/15 border border-purple-500/30 hover:border-cyan-400 text-gray-200 hover:text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm active:scale-95 whitespace-nowrap"
+              title="Descubrir un anime aleatorio"
+            >
+              <Dices className="w-4 h-4 text-cyan-400" />
+              <span>Aleatorio</span>
             </button>
 
             {/* Reset Button */}

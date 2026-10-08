@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Play, Heart, History, User, Compass, LogOut } from 'lucide-react';
+import { Menu, X, Play, Heart, History, User, Compass, LogOut, Dices } from 'lucide-react';
 import SearchBar from './SearchBar';
 import { useStore } from '../store/useStore';
 import { logoutUser } from '../services/firebase';
@@ -15,7 +15,7 @@ const NAV_ITEMS = [
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { user, favorites } = useStore();
+  const { user, favorites, openRandomModal } = useStore();
   const location = useLocation();
 
   // Handle scroll trigger to toggle background density
@@ -67,7 +67,7 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop Navigation Links */}
-            <div className="hidden lg:flex items-center gap-6">
+            <div className="hidden lg:flex items-center gap-5">
               {NAV_ITEMS.map((item) => (
                 <NavLink
                   key={item.path}
@@ -81,6 +81,15 @@ export default function Navbar() {
                   {item.label}
                 </NavLink>
               ))}
+
+              <button
+                onClick={openRandomModal}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500/15 to-cyan-500/15 hover:from-purple-500/25 hover:to-cyan-500/25 border border-purple-500/30 hover:border-cyan-400 text-xs font-bold text-gray-200 hover:text-white transition-all cursor-pointer shadow-sm active:scale-95"
+                title="Descubrir un anime aleatorio"
+              >
+                <Dices className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Aleatorio</span>
+              </button>
             </div>
 
             {/* Autocomplete Search Bar */}
@@ -205,6 +214,17 @@ export default function Navbar() {
                     <User className="w-4.5 h-4.5" />
                     Mi Perfil
                   </NavLink>
+
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      openRandomModal();
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl border font-semibold text-sm transition-all bg-gradient-to-r from-purple-500/10 via-cyan-500/10 to-transparent border-purple-500/20 text-cyan-300 hover:bg-white/10 cursor-pointer text-left"
+                  >
+                    <Dices className="w-4.5 h-4.5 text-cyan-400" />
+                    Anime Aleatorio
+                  </button>
                 </div>
               </div>
 

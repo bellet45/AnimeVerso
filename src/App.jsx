@@ -7,6 +7,7 @@ import { useStore } from './store/useStore';
 // Common Layout components
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import RandomAnimeModal from './components/RandomAnimeModal';
 import { Loader2 } from 'lucide-react'; // tree shaken loader icon
 
 // Lazy load pages for performance (code splitting)
@@ -111,6 +112,8 @@ export default function App() {
         {/* Brand Footer */}
         <Footer />
         
+        {/* Global Random Anime Modal */}
+        <RandomAnimeModal />
       </div>
     </Router>
   );

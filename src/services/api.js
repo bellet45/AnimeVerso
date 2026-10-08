@@ -203,8 +203,8 @@ export async function getAnimeDetails(slug) {
       bannerImage,
       synopsis,
       type,
-      genres,
-      studios,
+      genres: [...new Set(genres)],
+      studios: [...new Set(studios)],
       status,
       season,
       episodesCount,
@@ -501,8 +501,80 @@ export async function getFilteredCatalog(filters = {}, page = 1) {
 }
 
 /**
- * 7. Fetch Airing Schedule (Mocked / Unused)
+ * 7. Fetch Random Anime
+ * Selects a random anime from the catalog directory and enriches it with full details.
+ */
+export async function getRandomAnime() {
+  try {
+    // Pick a random page within the top 60 pages (~1,800 animes)
+    const randomPage = Math.floor(Math.random() * 60) + 1;
+    const res = await fetch(`${PROXY_BASE}/directorio?p=${randomPage}`);
+    if (!res.ok) throw new Error('Failed to fetch directory page');
+    const html = await res.text();
+
+    let catalogData = { data: [] };
+    const match = html.match(/var animes = (\{.*?\});/s);
+    if (match) {
+      try {
+        catalogData = JSON.parse(match[1]);
+      } catch (e) {
+        console.error("Failed to parse directory JSON:", e);
+      }
+    }
+
+    let items = catalogData.data || [];
+    if (items.length === 0) {
+      // Fallback to page 1
+      const fallbackRes = await fetch(`${PROXY_BASE}/directorio?p=1`);
+      if (fallbackRes.ok) {
+        const fallbackHtml = await fallbackRes.text();
+        const fbMatch = fallbackHtml.match(/var animes = (\{.*?\});/s);
+        if (fbMatch) {
+          try {
+            const fbData = JSON.parse(fbMatch[1]);
+            items = fbData.data || [];
+          } catch (e) {}
+        }
+      }
+    }
+
+    if (items.length === 0) throw new Error('No anime found in directory');
+
+    const randomItem = items[Math.floor(Math.random() * items.length)];
+
+    // Fetch full anime details for full synopsis, genres and banner
+    let details = null;
+    try {
+      details = await getAnimeDetails(randomItem.slug);
+    } catch (err) {
+      console.warn("Could not fetch full details for random anime, using summary:", err);
+    }
+
+    return {
+      title: details?.title || randomItem.title,
+      altTitle: details?.altTitle && details.altTitle !== (details?.title || randomItem.title) ? details.altTitle : '',
+      slug: randomItem.slug,
+      image: details?.coverImage || randomItem.image,
+      coverImage: details?.coverImage || randomItem.image,
+      bannerImage: details?.bannerImage || details?.coverImage || randomItem.image,
+      synopsis: details?.synopsis?.trim() || randomItem.synopsis?.trim() || 'Sin descripción disponible para este anime.',
+      type: details?.type || randomItem.tipo || randomItem.type || 'Serie',
+      status: details?.status || randomItem.estado || randomItem.status || 'En emision',
+      genres: details?.genres?.length ? [...new Set(details.genres)] : [],
+      studios: details?.studios?.length ? details.studios : (randomItem.studios ? [randomItem.studios] : []),
+      season: details?.season || '',
+      episodesCount: details?.episodesCount || 0
+    };
+  } catch (error) {
+    console.error("Error fetching random anime:", error);
+    throw error;
+  }
+}
+
+/**
+ * 8. Fetch Airing Schedule (Mocked / Unused)
  */
 export async function getSchedule() {
   return [];
 }
+
