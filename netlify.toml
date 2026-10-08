@@ -1,9 +1,8 @@
 [[redirects]]
   from = "/api-jkanime/*"
-  to = "https://jkanime.net/:splat"
+  to = "https://animeverso-proxy.perd15249.workers.dev/:splat"
   status = 200
   force = true
-  headers = { Origin = "https://jkanime.net", Referer = "https://jkanime.net/" }
 
 [[redirects]]
   from = "/*"
